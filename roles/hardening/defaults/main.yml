@@ -1,0 +1,33 @@
+# --- Paramètres noyau ---
+hardening_sysctl:
+  net.ipv4.ip_forward: 0                        # ce n'est pas un routeur
+  net.ipv4.conf.all.accept_redirects: 0         # ignorer les redirections ICMP
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0      # refuser le routage à la source
+  net.ipv4.conf.all.log_martians: 1             # journaliser les paquets aberrants
+  net.ipv4.icmp_echo_ignore_broadcasts: 1       # contre les attaques smurf
+  net.ipv4.tcp_syncookies: 1                    # contre les SYN floods
+
+# --- Paquets à supprimer ---
+hardening_packages_absent:
+  - telnet
+  - inetutils-telnet
+  - ftp
+  - inetutils-ftp
+  - rsh-client
+  - talk
+  - nis
+
+# --- auditd ---
+hardening_auditd_enabled: true
+
+hardening_audit_watches:
+  - { path: /etc/passwd,         perms: wa, key: identity }
+  - { path: /etc/shadow,         perms: wa, key: identity }
+  - { path: /etc/group,          perms: wa, key: identity }
+  - { path: /etc/sudoers,        perms: wa, key: sudoers }
+  - { path: /etc/sudoers.d/,     perms: wa, key: sudoers }
+  - { path: /etc/ssh/sshd_config, perms: wa, key: sshd }
+  - { path: /usr/bin/sudo,       perms: x,  key: sudo_usage }

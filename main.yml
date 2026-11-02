@@ -1,0 +1,49 @@
+- name: Socle commun
+  hosts: all:!attacker
+  become: true
+  roles:
+    - common
+    - hardening
+
+- name: Serveurs web
+  hosts: web
+  become: true
+  roles:
+    - web
+
+- name: Load balancer
+  hosts: lb
+  become: true
+  roles:
+    - lb
+
+- name: SIEM
+  hosts: siem
+  become: true
+  roles:
+    - siem
+
+- name: Détection sur les cibles
+  hosts: targets
+  become: true
+  roles:
+    - log_client
+    - fail2ban
+
+- name: Machine d'attaque
+  hosts: attacker
+  become: true
+  tasks:
+    - name: Installer les outils d'attaque
+      ansible.builtin.apt:
+        name: [hydra, nmap]
+        state: present
+        update_cache: true
+
+- name: Détection sur les cibles
+  hosts: targets
+  become: true
+  roles:
+    - log_client
+    - fail2ban
+    - aide

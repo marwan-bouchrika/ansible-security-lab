@@ -1,0 +1,5 @@
+- name: Audit de sécurité (lecture seule)
+  hosts: all:!attacker
+  become: true
+  roles:
+    - audit

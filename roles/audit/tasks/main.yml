@@ -1,0 +1,25 @@
+- name: Lancer les contrôles
+  ansible.builtin.shell: "{{ item.cmd }}"
+  loop: "{{ audit_checks }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: audit_results
+  changed_when: false
+  failed_when: false
+
+- name: Créer le dossier des rapports
+  ansible.builtin.file:
+    path: "{{ audit_report_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Générer le rapport
+  ansible.builtin.template:
+    src: audit_report.txt.j2
+    dest: "{{ audit_report_dir }}/{{ inventory_hostname }}.txt"
+    mode: "0644"
+  delegate_to: localhost
+  become: false

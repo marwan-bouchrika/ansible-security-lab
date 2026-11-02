@@ -1,0 +1,2 @@
+log_client_siem_ip: "{{ hostvars[groups['siem'][0]].ansible_default_ipv4.address }}"
+log_client_siem_port: 514

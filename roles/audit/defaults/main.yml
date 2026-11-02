@@ -1,0 +1,23 @@
+audit_report_dir: "{{ playbook_dir }}/reports"
+
+audit_checks:
+  - name: Système
+    cmd: "hostnamectl | grep -E 'Operating System|Kernel'"
+  - name: Comptes avec UID 0
+    cmd: "awk -F: '$3 == 0 {print $1}' /etc/passwd"
+  - name: Comptes avec un shell de connexion
+    cmd: "awk -F: '$7 !~ /(nologin|false)$/ {print $1 \" -> \" $7}' /etc/passwd"
+  - name: Membres du groupe sudo
+    cmd: "getent group sudo"
+  - name: Fichiers sudoers additionnels
+    cmd: "ls -la /etc/sudoers.d/"
+  - name: Ports en écoute
+    cmd: "ss -tulnp"
+  - name: Fichiers SUID
+    cmd: "find / -xdev -perm -4000 -type f 2>/dev/null | sort"
+  - name: Clés SSH autorisées
+    cmd: "for f in /root/.ssh/authorized_keys /home/*/.ssh/authorized_keys; do [ -f \"$f\" ] && echo \"== $f\" && cut -c1-60 \"$f\"; done"
+  - name: Dernières connexions SSH échouées
+    cmd: "journalctl _COMM=sshd --no-pager -q | grep -Ei 'failed|invalid' | tail -n 20"
+  - name: Clients réseau non chiffrés présents
+    cmd: "which telnet ftp rsh rlogin tftp 2>/dev/null"

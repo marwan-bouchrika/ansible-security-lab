@@ -1,0 +1,11 @@
+## Géré par Ansible
+[DEFAULT]
+ignoreip  = {{ fail2ban_ignoreip }}
+bantime   = {{ fail2ban_bantime }}
+findtime  = {{ fail2ban_findtime }}
+maxretry  = {{ fail2ban_maxretry }}
+banaction = ufw[blocktype=deny]
+
+[sshd]
+enabled = true
+backend = systemd

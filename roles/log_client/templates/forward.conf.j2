@@ -1,0 +1,10 @@
+## Géré par Ansible
+auth,authpriv.* action(
+    type="omfwd"
+    target="{{ log_client_siem_ip }}"
+    port="{{ log_client_siem_port }}"
+    protocol="tcp"
+    action.resumeRetryCount="-1"
+    queue.type="LinkedList"
+    queue.size="10000"
+)

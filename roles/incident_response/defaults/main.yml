@@ -1,0 +1,27 @@
+incident_evidence_root: "{{ playbook_dir }}/evidence"
+incident_siem_port: 514
+
+# Phase 1 : données volatiles, collectées AVANT l'isolement
+incident_volatile:
+  - { name: 01_processus,            cmd: "ps auxfww" }
+  - { name: 02_connexions,           cmd: "ss -tunap" }
+  - { name: 03_sessions_ouvertes,    cmd: "who -a" }
+
+# Phase 3 : données persistantes, collectées APRÈS l'isolement
+incident_commands:
+  - { name: 10_date_systeme,         cmd: "date -Is; uptime" }
+  - { name: 11_comptes_uid0,         cmd: "awk -F: '$3 == 0' /etc/passwd" }
+  - { name: 12_dernieres_connexions, cmd: "last -n 50 -F" }
+  - { name: 13_logs_ssh,             cmd: "journalctl _COMM=sshd --since '-7d' --no-pager" }
+  - { name: 14_crontabs,             cmd: "cat /etc/crontab; ls -la /etc/cron.*; for f in /var/spool/cron/crontabs/*; do echo \"== $f\"; cat \"$f\"; done" }
+  - { name: 15_services_actifs,      cmd: "systemctl list-units --type=service --state=running --no-pager" }
+  - { name: 16_empreintes_binaires,  cmd: "sha256sum /usr/bin/w /usr/bin/ls /usr/bin/ps /usr/bin/ss /usr/bin/sudo /usr/bin/su /usr/bin/login /usr/sbin/sshd" }
+  - { name: 17_verification_aide,    cmd: "aide --config=/etc/aide/aide-flowdesk.conf --check" }
+
+# Fichiers copiés tels quels
+incident_files:
+  - /etc/passwd
+  - /etc/shadow
+  - /etc/group
+  - /root/.ssh/authorized_keys
+  - /usr/bin/w

@@ -1,0 +1,40 @@
+- name: Installer nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Déployer la config du load balancer
+  ansible.builtin.template:
+    src: lb.conf.j2
+    dest: /etc/nginx/sites-available/flowdesk-lb
+    mode: "0644"
+  notify: Recharger nginx
+
+- name: Activer le site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/flowdesk-lb
+    dest: /etc/nginx/sites-enabled/flowdesk-lb
+    state: link
+  notify: Recharger nginx
+
+- name: Désactiver le site par défaut
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Recharger nginx
+
+- name: Tester la config nginx
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: nginx démarré et activé au boot
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Autoriser HTTP depuis partout
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp

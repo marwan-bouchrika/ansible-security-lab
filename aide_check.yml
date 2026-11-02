@@ -1,0 +1,8 @@
+- name: Contrôle d'intégrité
+  hosts: targets
+  become: true
+  tasks:
+    - name: Vérifier avec AIDE
+      ansible.builtin.include_role:
+        name: aide
+        tasks_from: check

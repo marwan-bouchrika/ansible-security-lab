@@ -1,0 +1,35 @@
+- name: Lancer la vérification AIDE
+  ansible.builtin.command: aide --config={{ aide_config }} --check
+  register: aide_result
+  changed_when: false
+  failed_when: aide_result.rc >= 14
+
+- name: Noter si la machine a été modifiée
+  ansible.builtin.set_fact:
+    aide_modified: "{{ aide_result.rc != 0 }}"
+
+- name: Créer le dossier des rapports
+  ansible.builtin.file:
+    path: "{{ aide_report_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Enregistrer le rapport
+  ansible.builtin.copy:
+    content: "{{ aide_result.stdout }}"
+    dest: "{{ aide_report_dir }}/{{ inventory_hostname }}.txt"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
+- name: Synthèse
+  ansible.builtin.debug:
+    msg: >-
+      Machines modifiées :
+      {{ ansible_play_hosts
+         | zip(ansible_play_hosts | map('extract', hostvars, 'aide_modified'))
+         | selectattr('1') | map('first') | list }}
+  run_once: true

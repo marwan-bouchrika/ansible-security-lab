@@ -1,0 +1,17 @@
+## Géré par Ansible
+database_in=file:{{ aide_db }}
+database_out=file:{{ aide_db_new }}
+gzip_dbout=no
+report_url=stdout
+
+# Ce qu'on surveille : permissions, inode, liens, propriétaire,
+# groupe, taille, dates de modification, et empreinte SHA256
+FLOWDESK = p+i+n+u+g+s+m+c+sha256
+
+{% for path in aide_watched %}
+{{ path }} FLOWDESK
+{% endfor %}
+
+{% for path in aide_excluded %}
+!{{ path }}
+{% endfor %}

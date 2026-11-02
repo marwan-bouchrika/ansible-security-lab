@@ -1,0 +1,2 @@
+siem_port: 514
+siem_log_dir: /var/log/remote

@@ -1,0 +1,119 @@
+# ---------- Préparation ----------
+- name: Fixer le dossier de preuves (horodatage unique)
+  ansible.builtin.set_fact:
+    incident_dir: "{{ incident_evidence_root }}/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+
+- name: Créer le dossier de preuves
+  ansible.builtin.file:
+    path: "{{ incident_dir }}/files"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+
+# ---------- Phase 1 : données volatiles ----------
+- name: Capturer les données volatiles
+  ansible.builtin.shell: "{{ item.cmd }}"
+  loop: "{{ incident_volatile }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: incident_volatile_results
+  changed_when: false
+  failed_when: false
+
+- name: Enregistrer les données volatiles
+  ansible.builtin.copy:
+    content: "$ {{ item.item.cmd }}\n\n{{ item.stdout }}\n{{ item.stderr }}\n"
+    dest: "{{ incident_dir }}/{{ item.item.name }}.txt"
+    mode: "0600"
+  loop: "{{ incident_volatile_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  delegate_to: localhost
+  become: false
+
+# ---------- Phase 2 : isolement ----------
+- name: Identifier l'adresse d'où vient la connexion Ansible
+  ansible.builtin.shell: 'echo "$SSH_CLIENT" | cut -d" " -f1'
+  register: incident_control
+  changed_when: false
+  become: false
+
+- name: Identifier l'IP du SIEM
+  ansible.builtin.set_fact:
+    incident_siem_ip: "{{ hostvars[groups['siem'][0]].ansible_default_ipv4.address }}"
+
+- name: Réinitialiser le pare-feu
+  community.general.ufw:
+    state: reset
+
+- name: Autoriser uniquement le SSH d'Ansible en entrée
+  community.general.ufw:
+    rule: allow
+    direction: in
+    port: "22"
+    proto: tcp
+    from_ip: "{{ incident_control.stdout }}"
+
+- name: Autoriser uniquement l'envoi des logs au SIEM en sortie
+  community.general.ufw:
+    rule: allow
+    direction: out
+    port: "{{ incident_siem_port }}"
+    proto: tcp
+    to_ip: "{{ incident_siem_ip }}"
+
+- name: Tout refuser en sortie
+  community.general.ufw:
+    policy: deny
+    direction: outgoing
+
+- name: Tout refuser en entrée et activer
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+# ---------- Phase 3 : données persistantes ----------
+- name: Collecter les données persistantes
+  ansible.builtin.shell: "{{ item.cmd }}"
+  loop: "{{ incident_commands }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: incident_results
+  changed_when: false
+  failed_when: false
+
+- name: Enregistrer les données persistantes
+  ansible.builtin.copy:
+    content: "$ {{ item.item.cmd }}\n\n{{ item.stdout }}\n{{ item.stderr }}\n"
+    dest: "{{ incident_dir }}/{{ item.item.name }}.txt"
+    mode: "0600"
+  loop: "{{ incident_results.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  delegate_to: localhost
+  become: false
+
+- name: Copier les fichiers suspects
+  ansible.builtin.fetch:
+    src: "{{ item }}"
+    dest: "{{ incident_dir }}/files/{{ item | replace('/', '_') }}"
+    flat: true
+    fail_on_missing: false
+  loop: "{{ incident_files }}"
+
+# ---------- Phase 4 : scellé ----------
+- name: Calculer les empreintes des preuves
+  ansible.builtin.shell: >
+    cd {{ incident_dir }} &&
+    find . -type f ! -name SHA256SUMS -exec sha256sum {} + | sort -k2 > SHA256SUMS
+  delegate_to: localhost
+  become: false
+
+- name: Résumé
+  ansible.builtin.debug:
+    msg:
+      - "Machine isolée : {{ inventory_hostname }}"
+      - "Accès conservé depuis : {{ incident_control.stdout }}"
+      - "Preuves : {{ incident_dir }}"

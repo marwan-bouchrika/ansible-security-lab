@@ -1,0 +1,4 @@
+## Géré par Ansible : ne pas modifier à la main
+{% for w in hardening_audit_watches %}
+-w {{ w.path }} -p {{ w.perms }} -k {{ w.key }}
+{% endfor %}

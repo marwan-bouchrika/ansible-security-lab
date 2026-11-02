@@ -1,0 +1,33 @@
+- name: Installer rsyslog
+  ansible.builtin.apt:
+    name: rsyslog
+    state: present
+
+- name: Créer le dossier des logs distants
+  ansible.builtin.file:
+    path: "{{ siem_log_dir }}"
+    state: directory
+    owner: syslog
+    group: adm
+    mode: "0750"
+
+- name: Configurer la réception des logs
+  ansible.builtin.template:
+    src: remote.conf.j2
+    dest: /etc/rsyslog.d/10-remote.conf
+    mode: "0644"
+  notify: Redémarrer rsyslog
+
+- name: Autoriser les cibles à envoyer leurs logs (IPv4)
+  community.general.ufw:
+    rule: allow
+    port: "{{ siem_port }}"
+    proto: tcp
+    from_ip: "{{ hostvars[item].ansible_default_ipv4.address }}"
+  loop: "{{ groups['targets'] }}"
+
+- name: rsyslog démarré
+  ansible.builtin.service:
+    name: rsyslog
+    state: started
+    enabled: true

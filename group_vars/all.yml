@@ -1,0 +1,2 @@
+# OrbStack masque auditd (noyau partagé) : à réactiver sur de vraies VM
+hardening_auditd_enabled: false

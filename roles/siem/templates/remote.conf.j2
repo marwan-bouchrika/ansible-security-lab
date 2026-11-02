@@ -1,0 +1,9 @@
+## Géré par Ansible
+module(load="imtcp")
+input(type="imtcp" port="{{ siem_port }}" ruleset="remote")
+
+template(name="PerHost" type="string" string="{{ siem_log_dir }}/%HOSTNAME%/auth.log")
+
+ruleset(name="remote") {
+    action(type="omfile" dynaFile="PerHost")
+}

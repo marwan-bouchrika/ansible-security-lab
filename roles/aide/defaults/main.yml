@@ -1,0 +1,22 @@
+aide_config: /etc/aide/aide-flowdesk.conf
+aide_db: /var/lib/aide/flowdesk.db
+aide_db_new: /var/lib/aide/flowdesk.db.new
+aide_report_dir: "{{ playbook_dir }}/reports/aide"
+aide_reinit: false
+
+aide_watched:
+  - /etc
+  - /usr/bin
+  - /usr/sbin
+  - /root/.ssh
+  - /home
+
+aide_excluded:
+  - /etc/mtab
+  - /etc/resolv.conf
+  - /etc/ld.so.cache
+  - /home/[^/]+/\.cache
+  - /home/[^/]+/\.ansible
+  - /home/[^/]+/\.bash_history
+  - /home/[^/]+/\.lesshst
+  - /home/[^/]+/\.viminfo

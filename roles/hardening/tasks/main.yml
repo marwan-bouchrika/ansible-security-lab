@@ -1,0 +1,54 @@
+# ---------- Noyau ----------
+- name: Appliquer les paramètres noyau
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-hardening.conf
+    reload: true
+  loop: "{{ hardening_sysctl | dict2items }}"
+  loop_control:
+    label: "{{ item.key }} = {{ item.value }}"
+
+# ---------- Paquets ----------
+- name: Supprimer les paquets inutiles ou dangereux
+  ansible.builtin.apt:
+    name: "{{ hardening_packages_absent }}"
+    state: absent
+    purge: true
+
+# ---------- Mises à jour automatiques ----------
+- name: Installer unattended-upgrades
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Activer les mises à jour de sécurité automatiques
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    mode: "0644"
+
+# ---------- auditd ----------
+- name: Configurer auditd
+  when: hardening_auditd_enabled
+  block:
+    - name: Installer auditd
+      ansible.builtin.apt:
+        name: [auditd, audispd-plugins]
+        state: present
+
+    - name: Déployer les règles d'audit
+      ansible.builtin.template:
+        src: audit.rules.j2
+        dest: /etc/audit/rules.d/hardening.rules
+        mode: "0640"
+      notify: Charger les règles auditd
+
+    - name: auditd démarré et activé au boot
+      ansible.builtin.service:
+        name: auditd
+        state: started
+        enabled: true

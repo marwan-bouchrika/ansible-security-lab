@@ -1,0 +1,29 @@
+- name: Vérifier la demande
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: La cible doit être fournie et appartenir aux cibles
+      ansible.builtin.assert:
+        that:
+          - target is defined
+          - target in groups['targets']
+        fail_msg: "Usage : -e target=<machine>, par exemple node3.orb.local"
+
+- name: Collecter les facts nécessaires
+  hosts: web:siem
+  gather_facts: true
+  tasks: []
+
+- name: Retirer la cible du load balancer
+  hosts: lb
+  become: true
+  vars:
+    lb_excluded: ["{{ target }}"]
+  roles:
+    - lb
+
+- name: Réponse à incident
+  hosts: "{{ target }}"
+  become: true
+  roles:
+    - incident_response

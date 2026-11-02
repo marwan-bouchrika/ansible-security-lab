@@ -1,0 +1,40 @@
+- name: Mettre à jour le cache et les paquets
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+    upgrade: dist
+
+- name: Régler le fuseau horaire
+  community.general.timezone:
+    name: Europe/Paris
+
+- name: Installer les outils de base
+  ansible.builtin.apt:
+    name: [htop, curl, vim, ufw]
+    state: present
+
+- name: Config SSH durcie
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/00-flowdesk.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+    mode: "0644"
+  notify: Redémarrer ssh
+
+- name: Tester la config SSH
+  ansible.builtin.command: sshd -t
+  changed_when: false
+
+- name: Autoriser SSH
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Activer ufw, tout refuser par défaut en entrée
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming

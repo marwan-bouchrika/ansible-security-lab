@@ -1,0 +1,14 @@
+=====================================================
+ AUDIT DE SÉCURITÉ : {{ inventory_hostname }}
+ IP     : {{ ansible_default_ipv4.address }}
+ Date   : {{ ansible_date_time.iso8601 }}
+=====================================================
+{% for r in audit_results.results %}
+
+### {{ r.item.name }}
+{% if r.stdout %}
+{{ r.stdout }}
+{% else %}
+(aucun résultat)
+{% endif %}
+{% endfor %}

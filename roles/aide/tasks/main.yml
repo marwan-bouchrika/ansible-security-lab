@@ -1,0 +1,23 @@
+- name: Installer AIDE
+  ansible.builtin.apt:
+    name: aide
+    state: present
+
+- name: Déployer la configuration AIDE
+  ansible.builtin.template:
+    src: aide-flowdesk.conf.j2
+    dest: "{{ aide_config }}"
+    mode: "0600"
+
+- name: Supprimer l'ancienne référence (si réinitialisation demandée)
+  ansible.builtin.file:
+    path: "{{ aide_db }}"
+    state: absent
+  when: aide_reinit | bool
+
+- name: Créer la base de référence
+  ansible.builtin.shell: >
+    aide --config={{ aide_config }} --init &&
+    mv {{ aide_db_new }} {{ aide_db }}
+  args:
+    creates: "{{ aide_db }}"

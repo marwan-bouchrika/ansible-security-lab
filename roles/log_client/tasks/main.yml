@@ -1,0 +1,17 @@
+- name: Installer rsyslog
+  ansible.builtin.apt:
+    name: rsyslog
+    state: present
+
+- name: Transférer les logs d'authentification au SIEM
+  ansible.builtin.template:
+    src: forward.conf.j2
+    dest: /etc/rsyslog.d/90-forward-siem.conf
+    mode: "0644"
+  notify: Redémarrer rsyslog
+
+- name: rsyslog démarré
+  ansible.builtin.service:
+    name: rsyslog
+    state: started
+    enabled: true
